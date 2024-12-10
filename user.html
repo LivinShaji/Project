@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Portal</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000000; /* Black background */
+            color: #ffffff; /* White text for contrast */
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #1a1a2e; /* Dark blue background */
+            color: #ffffff;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            margin: 0;
+        }
+        .search-container {
+            text-align: center;
+            margin: 20px auto;
+            width: 80%;
+        }
+        .search-bar {
+            width: 60%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: #1a1a2e; /* Dark blue */
+            color: white;
+        }
+        .search-bar:focus {
+            outline: none;
+            border-color: #0066cc; /* Blue for focus */
+        }
+        .search-btn {
+            padding: 10px 20px;
+            background-color: #0066cc; /* Blue button color */
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .search-btn:hover {
+            background-color: #004d99; /* Darker blue for hover */
+        }
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            gap: 20px;
+            justify-content: center;
+        }
+        .video-card {
+            background-color: #181818;
+            border-radius: 8px;
+            overflow: hidden;
+            width: 200px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .video-card img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+        .video-card:hover {
+            transform: scale(1.05);
+        }
+        .video-title {
+            padding: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            color: #1db954;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>User Portal</h1>
+    </header>
+    <div class="search-container">
+        <h2>Video Search</h2>
+        <input type="text" id="title" class="search-bar" placeholder="Enter video title...">
+        <button class="search-btn" onclick="searchVideo()">Search</button>
+    </div>
+    <div id="dashboard" class="dashboard"></div>
+
+    <script>
+        // Search for a video and validate its existence
+        function searchVideo() {
+            const title = document.getElementById('title').value.trim();
+            if (!title) {
+                alert('Please enter a video title.');
+                return;
+            }
+
+            const apiUrl = `https://prod-10.northeurope.logic.azure.com:443/workflows/2f1492cd29724035af9e1f2cb2e2bcdd/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=59dK1lfFzbl4hejvbJb6zWYVQERa3AaABclYl6iIU8g&title=${encodeURIComponent(title)}`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.results && data.results.length > 0) {
+                        window.location.href = `uservideo.html?title=${encodeURIComponent(title)}`;
+                    } else {
+                        alert('No video found with that title.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching video data:', error);
+                    alert('An error occurred while searching for the video. Please try again.');
+                });
+        }
+
+        // Load Dashboard videos
+        const dashboardApi = "https://prod-32.northeurope.logic.azure.com:443/workflows/c5b1a0c934564e07b2f67764d7bf7fcb/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=YKnZdp87Z7dxVDWJz8rJ-_Z8evnB_IRu4gfGyFWjM6k";
+        const blobBaseUrl = "https://netflixvideos.blob.core.windows.net";
+
+        fetch(dashboardApi)
+            .then(response => response.json())
+            .then(data => {
+                // Sort videos by timeOfUpload (latest first)
+                data.sort((a, b) => new Date(b.timeOfUpload) - new Date(a.timeOfUpload));
+
+                const dashboard = document.getElementById('dashboard');
+                data.forEach(video => {
+                    const videoCard = document.createElement('div');
+                    videoCard.classList.add('video-card');
+                    videoCard.innerHTML = `
+                        <img src="${blobBaseUrl}${video.thumbnailpath}" alt="${video.title}" />
+                        <div class="video-title">${video.title}</div>
+                    `;
+                    videoCard.onclick = () => {
+                        window.location.href = `uservideo.html?title=${encodeURIComponent(video.title)}`;
+                    };
+                    dashboard.appendChild(videoCard);
+                });
+            })
+            .catch(error => console.error('Error loading dashboard:', error));
+    </script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #121212; /* Dark background */
+        }
+        .login-container {
+            background-color: #1E1E1E; /* Darker container */
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            width: 400px; /* Increased width */
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .login-container h2 {
+            margin-bottom: 30px; /* Increased space */
+            text-align: center;
+            color: #007BFF; /* Blue color for the title */
+        }
+        .input-field {
+            width: 80%; /* Make the input fields wider */
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #007BFF; /* Blue border */
+            border-radius: 4px;
+            background-color: #333;
+            color: white;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #0056b3; /* Darker blue on focus */
+        }
+        .btn {
+            width: 80%; /* Make the button wider */
+            padding: 12px;
+            background-color: #007BFF; /* Blue button */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+        }
+        .error-message {
+            color: red;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        .signup-link {
+            margin-top: 20px;
+            color: #007BFF;
+            text-decoration: none;
+        }
+        .signup-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>Login</h2>
+    <input type="text" id="username" class="input-field" placeholder="Username" required />
+    <input type="password" id="password" class="input-field" placeholder="Password" required />
+    <button class="btn" onclick="login()">Login</button>
+    <div class="error-message" id="error-message"></div>
+    <a href="signup.html" class="signup-link">Don't have an account? Sign up</a> <!-- Sign up link -->
+</div>
+
+<script>
+    async function login() {
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+        const errorMessage = document.getElementById("error-message");
+
+        // Clear any previous error messages
+        errorMessage.textContent = '';
+
+        // Fetch user data from the provided link
+        const apiUrl = 'https://prod-33.northeurope.logic.azure.com:443/workflows/ec3f971661de4d1db14e53706ecf5d79/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=7q3BcuVcQ_dmV1tMGCqeHGovC6nyDCoB-7LhMHrC9eA';
+
+        try {
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+
+            // Check if any user matches the username and password
+            const user = data.Documents.find(user => user.username === username && user.password === password);
+
+            if (user) {
+                // Redirect based on the user's role
+                if (user.role === "user") {
+                    window.location.href = "user.html";
+                } else if (user.roles === "creator") {
+                    window.location.href = "creator.html";
+                }
+            } else {
+                errorMessage.textContent = "Invalid username or password.";
+            }
+        } catch (error) {
+            errorMessage.textContent = "Error connecting to the server.";
+        }
+    }
+</script>
+
+</body>
+</html>

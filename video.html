@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Detail</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .video-player {
+            width: 60%;
+        }
+        .video-metadata {
+            width: 35%;
+            padding-left: 20px;
+            background-color: #181818;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .metadata-item {
+            margin-bottom: 15px;
+        }
+        .metadata-item span {
+            color: #b3b3b3;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1db954;
+        }
+        .comments-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #282828;
+            border-radius: 8px;
+        }
+        .comment-list {
+            list-style-type: disc;
+            margin-left: 20px;
+            color: #b3b3b3;
+        }
+        .comment-list li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="video-player">
+            <video id="video" width="100%" controls>
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div class="video-metadata">
+            <div class="metadata-item">
+                <span class="title" id="videoTitle"></span>
+            </div>
+            <div class="metadata-item">
+                <strong>Publisher:</strong> <span id="publisher"></span>
+            </div>
+            <div class="metadata-item">
+                <strong>Producer:</strong> <span id="producer"></span>
+            </div>
+            <div class="metadata-item">
+                <strong>Genre:</strong> <span id="genre"></span>
+            </div>
+            <div class="metadata-item">
+                <strong>Age Rating:</strong> <span id="agerating"></span>
+            </div>
+            <!-- Comments Section -->
+            <div class="comments-section" id="commentsSection">
+                <h3>Comments</h3>
+                <ul class="comment-list" id="commentsList">
+                    <!-- Comments will be displayed here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const title = urlParams.get('title');
+        const apiUrl = `https://prod-10.northeurope.logic.azure.com:443/workflows/2f1492cd29724035af9e1f2cb2e2bcdd/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=59dK1lfFzbl4hejvbJb6zWYVQERa3AaABclYl6iIU8g&title=${encodeURIComponent(title)}`;
+        const commentsApiUrl = `https://prod-07.northeurope.logic.azure.com:443/workflows/9088141a3aa24aa6b4740f778e706704/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=t2SzmEfzKVLR3gnxYyW_L_IuhTFmC-GUHlzLHEAhd84`;
+
+        // Fetch video details
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data.results && data.results.length > 0) {
+                    const videoData = data.results[0];
+                    document.getElementById('video').src = videoData.videoUrl;
+                    document.getElementById('videoTitle').textContent = videoData.title;
+                    document.getElementById('publisher').textContent = videoData.publisher;
+                    document.getElementById('producer').textContent = videoData.producer;
+                    document.getElementById('genre').textContent = videoData.genre;
+                    document.getElementById('agerating').textContent = videoData.agerating;
+                } else {
+                    alert('No video found with that title.');
+                }
+            })
+            .catch(error => console.error('Error fetching video data:', error));
+
+        // Fetch comments for the specific video title
+        fetch(`${commentsApiUrl}&title=${encodeURIComponent(title)}`)
+            .then(response => response.json())
+            .then(data => {
+                const commentsList = document.getElementById('commentsList');
+                commentsList.innerHTML = ''; // Clear any existing comments
+                if (data.Documents && data.Documents.length > 0) {
+                    const filteredComments = data.Documents.filter(commentData => commentData.title === title);
+                    if (filteredComments.length > 0) {
+                        filteredComments.forEach(commentData => {
+                            const commentItem = document.createElement('li');
+                            commentItem.textContent = commentData.comment;
+                            commentsList.appendChild(commentItem);
+                        });
+                    } else {
+                        commentsList.innerHTML = '<li>No comments available for this video.</li>';
+                    }
+                } else {
+                    commentsList.innerHTML = '<li>No comments available for this video.</li>';
+                }
+            })
+            .catch(error => console.error('Error fetching comments:', error));
+    </script>
+</body>
+</html>

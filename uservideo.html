@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Detail</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .video-player {
+            width: 60%;
+        }
+        .video-metadata {
+            width: 35%;
+            padding-left: 20px;
+            background-color: #181818;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .metadata-item {
+            margin-bottom: 15px;
+        }
+        .metadata-item span {
+            color: #b3b3b3;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1db954;
+        }
+        .feedback-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #282828;
+            border-radius: 8px;
+        }
+        .feedback-section textarea, .feedback-section input {
+            width: calc(100% - 30px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #383838;
+            color: white;
+        }
+        .feedback-section button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #1db954;
+            color: white;
+            cursor: pointer;
+        }
+        .feedback-section button:hover {
+            background-color: #159c44;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="video-player">
+            <video id="video" width="100%" controls>
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div class="video-metadata">
+            <div class="metadata-item">
+                <span class="title" id="videoTitle"></span>
+            </div>
+            <div class="metadata-item">
+                <strong>Publisher:</strong> <span id="publisher"></span>
+            </div>
+            <div class="metadata-item">
+                <strong>Producer:</strong> <span id="producer"></span>
+            </div>
+            <div class="metadata-item">
+                <strong>Genre:</strong> <span id="genre"></span>
+            </div>
+            <div class="metadata-item">
+                <strong>Age Rating:</strong> <span id="agerating"></span>
+            </div>
+            <div class="feedback-section" id="feedbackSection">
+                <h3>Feedback</h3>
+                <textarea id="comment" placeholder="Write your comment here..." rows="4"></textarea>
+                <input id="rating" type="number" placeholder="Rating (1-5)" min="1" max="5">
+                <button id="submitFeedback">Submit Feedback</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const title = urlParams.get('title');
+        const apiUrl = `https://prod-10.northeurope.logic.azure.com:443/workflows/2f1492cd29724035af9e1f2cb2e2bcdd/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=59dK1lfFzbl4hejvbJb6zWYVQERa3AaABclYl6iIU8g&title=${encodeURIComponent(title)}`;
+        const feedbackApiUrl = `https://prod-18.northeurope.logic.azure.com:443/workflows/7f7d17f7b6994f63b666d64a6527ca47/triggers/When_a_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=4K15aJ99MWXfH_OW6WoPShKlkGqhQEtKTKEB-ur7jRE`;
+
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data.results && data.results.length > 0) {
+                    const videoData = data.results[0];
+                    document.getElementById('video').src = videoData.videoUrl;
+                    document.getElementById('videoTitle').textContent = videoData.title;
+                    document.getElementById('publisher').textContent = videoData.publisher;
+                    document.getElementById('producer').textContent = videoData.producer;
+                    document.getElementById('genre').textContent = videoData.genre;
+                    document.getElementById('agerating').textContent = videoData.agerating;
+                } else {
+                    alert('No video found with that title.');
+                }
+            })
+            .catch(error => console.error('Error fetching video data:', error));
+
+        document.getElementById('submitFeedback').addEventListener('click', () => {
+            const videoTitle = document.getElementById('videoTitle').textContent;
+            const comment = document.getElementById('comment').value;
+            const rating = document.getElementById('rating').value;
+
+            if (!comment || !rating) {
+                alert('Please fill out both comment and rating.');
+                return;
+            }
+
+            const feedback = {
+                title: videoTitle,
+                comment,
+                rating: parseInt(rating)
+            };
+
+            fetch(feedbackApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(feedback)
+            })
+            .then(response => {
+                if (response.ok) {
+                    displayFeedback(feedback);
+                } else {
+                    alert('Error submitting feedback.');
+                }
+            })
+            .catch(error => console.error('Error submitting feedback:', error));
+        });
+
+        function displayFeedback(feedback) {
+            const feedbackSection = document.getElementById('feedbackSection');
+            feedbackSection.innerHTML = `
+                <h3>Feedback</h3>
+                <p><strong>Comment:</strong> ${feedback.comment}</p>
+                <p><strong>Rating:</strong> ${feedback.rating}/5</p>
+            `;
+        }
+    </script>
+</body>
+</html>
